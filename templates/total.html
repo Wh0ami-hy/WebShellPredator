@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>menu</title>
+    <link rel="stylesheet" href="../static/lib/layui-v2.6.3/css/layui.css" media="all">
+    <link rel="stylesheet" href="../static/css/public.css" media="all">
+    <script src="../static/lib/jquery-3.4.1/jquery-3.4.1.min.js"></script>
+	<script src="../static/js/echarts.js"></script>
+	<script src="../static/lib/layui-v2.6.3/layui.js" charset="utf-8"></script>
+	<title>总览</title>
+	<style>
+		#static-detection{
+			border: 1px solid black;
+			height: 300px;
+			width: 300px;
+			margin-left: 60px;
+			margin-top: 60px;
+			float:left;
+		}
+		#intelligent-detection{
+			border: 1px solid black;
+			height: 300px;
+			width: 300px;
+			margin-top: 60px;
+			margin-left: 60px;
+			float:left;
+		}
+		#statistics{
+			border: 1px solid black;
+			height: 300px;
+			width: 800px;
+			margin-left: 60px;
+			margin-top: 60px;
+			float:left;
+            
+		}
+        .layui-btn:not(.layui-btn-lg ):not(.layui-btn-sm):not(.layui-btn-xs) {
+            height: 34px;
+            line-height: 34px;
+            padding: 0 8px;
+        }
+	</style>
+</head>
+<body>
+	<div class="layui-row">
+		<div class="layui-col-md2">
+			<h1>活动总览</h1>
+			
+		</div>
+		<div class="layui-col-md1">
+			<button class="layui-btn" onclick="repaint()">刷新</button>
+		</div>
+		<div class="layui-col-md9"></div>
+	</div>
+	
+    <div id="static-detection"></div>
+	<div id="intelligent-detection"></div>
+	<div id="statistics"></div>
+    <script>
+		let socket = parent.get_socket();
+		let tempData = undefined
+		let myChart1 = echarts.init(document.getElementById('static-detection'))
+		let myChart2 = echarts.init(document.getElementById('intelligent-detection'))
+		let myChart3 = echarts.init(document.getElementById('statistics'))
+		let option1 = {
+				title:{
+					text:'静态检测结果'
+				},
+				series:[
+					{
+						name: '静态检测结果',
+						type: 'pie',
+						radius: '55%',
+						data:[
+							{ name:'正常文件数'},
+							{ name:'危险文件数'}
+						]
+					}
+				],
+				tooltip:{
+					show: true,
+				}
+			}
+		let option2 = {
+				title:{
+					text:'智能检测结果'
+				},
+				series:[
+					{
+						name: '智能检测结果',
+						type: 'pie',
+						radius: '55%',
+						data:[
+							{ name:'正常文件数'},
+							{ name:'危险文件数'}
+						]
+					}
+				],
+				tooltip:{
+					show: true,
+				}
+			}
+		let option3 = {
+				title:{
+					text: '趋势'
+				},
+				series:[
+					{
+						name: '检测危险文件数',
+						type: 'line',
+					}
+				],
+				xAxis:{
+					name:"检测时间",
+					nameLoaction: 'end'
+				},
+				yAxis:{},
+				dataZoom:[
+					{
+						type : 'slider',
+						start: 0,
+						end:100
+					}
+				],
+				legend:{},
+				tooltip:{
+					show: true,
+					trigger: 'axis'
+				}
+			}
+		function paintting(dataInObject){
+			[option1.series[0].data[0].value, option1.series[0].data[1].value] = [dataInObject.op1[0], dataInObject.op1[1]];
+			[option2.series[0].data[0].value, option2.series[0].data[1].value] = [dataInObject.op2[0], dataInObject.op2[1]];
+			option3.series[0].data = dataInObject.op3.dt2;
+			option3.xAxis.data = dataInObject.op3.dt1;
+			setTimeout(myChart1.setOption(option1), 500)
+			setTimeout(myChart2.setOption(option2), 500)
+			setTimeout(myChart3.setOption(option3), 500)
+		}
+		function repaint(){
+			location.reload()
+		}
+		if(document.visibilityState === 'visible'){
+			socket.emit('total get initdata',{'arg':0})
+		}else{
+			console.log('页面未显示，不能主动发送')
+		}
+		socket.on('total receive data',function(dataInObject){
+			if(document.visibilityState === 'visible' && document.getElementById('static-detection').clientHeight !== 0){
+				paintting(dataInObject)
+			}else{
+				console.log('页面未显示，不能渲染')
+			}
+		})
+	</script>
+</body>
+</html>

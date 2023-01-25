@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../static/lib/layui-v2.6.3/css/layui.css"  media="all">
+    <script src="../static/lib/layui-v2.6.3/layui.js"></script>
+    <script src="../static/js/vue.js"></script>
+    <style>
+        .layui-input-block{
+            margin-left: 20px;
+        }
+        input{
+            margin-top: 5px;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="layui-form-item">
+            <div class="layui-input-block">
+                <label>文件或文件夹路径</label>
+                <input type="text" name="title" v-model:value="pathInput" required  lay-verify="required" placeholder="请输入路径" autocomplete="off" class="layui-input">
+                <button type="button" class="layui-btn" @click="confirm_path">确认</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        let app = new Vue({
+            el: '#app',
+            data: {
+                pathInput:'',
+            },
+            mounted(){
+                window.setPath = this.setPath; // 获取父页面暴露的方法
+            },
+            methods:{
+                confirm_path: function(){ //点击保存时触发，将变量通过父页面的方法传递过去
+                    window.parent.setPath(this.pathInput) // 在这里调用父页面的方法
+                }
+            }
+        })
+    </script>
+</body>
+</html>

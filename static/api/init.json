@@ -1,0 +1,83 @@
+{
+  "homeInfo": {
+    "title": "首页",
+    "href": "/pages/total"
+  },
+  "logoInfo": {
+    "title": "MLBEIDS",
+    "image": "../static/images/logo.ico",
+    "href": ""
+  },
+  "menuInfo": [
+    {
+      "title": "常规",
+      "icon": "fa fa-address-book",
+      "href": "",
+      "target": "_self",
+      "child": [
+        {
+          "title": "静态检测",
+          "href": "",
+          "icon": "fa fa-window-maximize",
+          "target": "_self",
+          "child":[
+            {
+            "title": "正则匹配",
+            "href": "/pages/regular_matching",
+            "icon": "fa fa-window-maximize",
+            "target": "_self"
+            },
+            {
+            "title": "信息熵",
+            "href": "/pages/information_entropy",
+            "icon": "fa fa-window-maximize",
+            "target": "_self"
+            }
+          ]
+        },
+        {
+          "title": "智能检测",
+          "href": "/pages/intelligent_detection",
+          "icon": "fa fa-gears",
+          "target": "_self"
+        },
+        {
+          "title": "进程监控",
+          "href": "/pages/process_monitoring",
+          "icon": "fa fa-file-text",
+          "target": "_self"
+        },
+        {
+          "title": "文件监控",
+          "href": "/pages/file_monitoring",
+          "icon": "fa fa-calendar",
+          "target": "_self"
+        },
+        {
+          "title": "端口扫描",
+          "href": "/pages/port_scan",
+          "icon": "fa fa-flag-o",
+          "target": "_self"
+        },
+        {
+          "title": "日志分析",
+          "href": "/pages/log_analysis",
+          "icon": "fa fa-home",
+          "target": "_self"
+        },
+        {
+          "title": "威胁提示",
+          "href": "/pages/threat_warming",
+          "icon": "fa fa-snowflake-o",
+          "target": "_self"
+        },
+        {
+          "title": "检测报告",
+          "href": "/pages/report_template",
+          "icon": "fa fa-snowflake-o",
+          "target": "_self"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8"/>
+    <title>入侵检测报告</title>
+    <!-- 引入 ECharts 文件 -->
+    <script src="https://cdn.staticfile.org/echarts/4.3.0/echarts.min.js"></script>
+</head>
+<style>
+    img {
+        width: 150px;
+        height: 150px;
+    }
+
+    hr {
+        height:1px;
+        border:none;
+        border-top:2px dashed #0066CC;
+    }
+
+    #main {
+        width: 100%;
+        margin: 20px auto;
+        txt-align: center;
+        /*background-color: black;*/
+    }
+
+    #main1 {
+        height: 350px;
+        width: 350px;
+        margin-left: 80px;
+        margin-top: 30px;
+        float: left;
+    }
+
+    #main2 {
+        height: 350px;
+        width: 350px;
+        margin-top: 30px;
+        margin-right: 80px;
+        float: right;
+    }
+
+    #main3 {
+        width: 600px;
+        height: 350px;
+        margin: 20px auto;
+        /*float: left;*/
+    }
+
+    #main4 {
+        width: 100%;
+        margin: 20px auto;
+        /*float: left;*/
+    }
+
+    #main5 {
+        width: 100%;
+        margin: 20px auto;
+
+    }
+
+    table, th, td {
+        border: 2px solid #9f9c9c;
+        border-collapse: collapse;
+        padding: 15px;
+        margin: auto;
+        width: 60%;
+    }
+
+    .header {
+        text-align: center;
+        height: 700px;
+        width: 1000px;
+        margin: 100px auto;
+        border: 2px solid #000;
+        border-radius: 4px;
+    }
+    #title{
+        text-align: center;
+        margin-top: 200px;
+
+    }
+
+    .body {
+        width: 1000px;
+        margin: 30px auto;
+        border: 2px solid #000;
+        border-radius: 4px;
+    }
+
+    body {
+        margin: 0;
+        padding: 0;
+    }
+
+    h2 {
+        font-weight: bold;
+        display: inline-block;
+        padding-left: 10px;
+        border-left: 5px solid #916dd5;
+    }
+
+    #d1::after {
+        display: block;
+        clear: both;
+    }
+
+    #d2::after {
+        display: block;
+        clear: both;
+    }
+
+    #d3::after {
+        display: block;
+        clear: both;
+    }
+    .txt{
+        margin: 10px auto;
+        width: 850px;
+        background: #fffcef;
+        border-radius: 4px;
+        padding: 15px;
+        color: #db7c22;
+        border: 1px solid #ffbb76;
+    }
+
+
+</style>
+
+
+<body>
+<div class="header">
+    <div id="title"><h1>入侵检测报告</h1>
+        <hr>
+        <img src="logo.ico" alt="logo">
+        <h1>基于机器学习的分布式入侵检测系统</h1>
+        <p>{{curr_time}}</p>
+    </div>
+
+</div>
+<div class="body">
+    <div id="t1">
+        <div><h2>报告信息</h2></div>
+        <div id="main">
+            <table>
+                <tr>
+                    <th>主机名称</th>
+                    <th>{{host_name}}</th>
+                </tr>
+                <tr>
+                    <th>操作系统</th>
+                    <th>{{sys_name}}</th>
+                </tr>
+                <tr>
+                    <th>IP地址</th>
+                    <th>{{ip_adders}}</th>
+                </tr>
+                <tr>
+                    <th>检测时间</th>
+                    <th>{{curr_time}}</th>
+                </tr>
+                <tr>
+                    <th>检测范围</th>
+                    <th>{{path_name}}</th>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div id="d1">
+        <div><h2>样本检测结果</h2></div>
+        <div class="txt">
+            通过对{{path_name}}目录进行的恶意文本扫描，共扫描{{detect_num}}个文件，静态检测发现恶意文件{{static_danger}}个，智能检测发现恶意文件{{intel_danger}}个。
+            恶意文件分别占比 {{'{:.0f}%'.format(static_danger/detect_num*100)}},{{'{:.0f}%'.format(intel_danger/detect_num*100)}},建议用户对文件的监控。数据分布饼状图如下：
+        </div>
+        <!-- 为 ECharts 准备一个定义了宽高的 DOM -->
+        <div id="main1"></div>
+        <div id="main2"></div>
+    </div>
+    <div id="d2">
+        <div><h2>历史检测结果</h2></div>
+        <div id="main3"></div>
+    </div>
+    <div id="d3">
+        <div><h2>黑名单进程结果</h2></div>
+        <div class="txt">
+            通过对系统进程监控，共监控到{{process_num}}个黑名单进程活动，建议用户加强对进程监控，及时通过ls -al /proc/[pid]/exe命令确定进程的实际目录位置。数据分布表格如下：
+        </div>
+        <div id="main4">
+            <table>
+                <tr>
+                    <th>进程名称</th>
+                    <th>说明</th>
+                    <th>PID</th>
+                    <th>运行时间</th>
+                </tr>
+                {% for item in process %}
+                <tr>
+                    <td>{{ item.进程名称 }}</td>
+                    <td>{{ item.说明 }}</td>
+                    <td>{{ item.PID }}</td>
+                    <td>{{ item.运行时间 }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+    <div id="d4">
+        <div><h2>文件改动监控结果</h2></div>
+        <div class="txt">
+            通过对文件改动的监控，共监控到{{monitors_num}}次文件改动，建议用户加强对文件改动监控，实时把握文件权限的变化，发现异常文件改动及时处理。数据分布表格如下：
+        </div>
+        <div id="main5">
+            <table>
+                <tr>
+                    <th>文件</th>
+                    <th>操作</th>
+                    <th>运行时间</th>
+                </tr>
+                {% for item in monitors %}
+                <tr>
+                    <td>{{ item.文件 }}</td>
+                    <td>{{ item.操作 }}</td>
+                    <td>{{ item.运行时间 }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    // 基于准备好的dom，初始化echarts实例
+    let myChart1 = echarts.init(document.getElementById('main1'));
+    let myChart2 = echarts.init(document.getElementById('main2'));
+    let myChart3 = echarts.init(document.getElementById('main3'));
+
+    // 指定图表的配置项和数据
+    let option1 = {
+        title: {
+            text: '静态检测结果'
+        },
+        series: [
+            {
+                name: '静态检测结果',
+                type: 'pie',
+                radius: '55%',
+                data: [
+                    {
+                        value: {{static_normal}},
+                        name: '正常文件'
+                    },
+                    {
+                        value: {{static_danger}},
+                        name: '危险文件'
+                    }
+                ]
+            }
+        ],
+        tooltip: {
+            show: true,
+        }
+    };
+    let option2 = {
+        title: {
+            text: '智能检测结果'
+        },
+        series: [
+            {
+                name: '智能检测结果',
+                type: 'pie',
+                radius: '55%',
+                data: [
+                    {
+                        value: {{intel_normal}},
+                        name: '正常文件'
+                    },
+                    {
+                        value: {{intel_danger}},
+                        name: '危险文件'
+                    }
+                ]
+            }
+        ],
+        tooltip: {
+            show: true,
+        }
+    };
+    let option3 = {
+        xAxis: {
+            name: '日期',
+            type: 'category',
+            data: {{history_date}}
+        },
+        yAxis: {
+            name: '危险文件数量(个)',
+            type: 'value'
+        },
+        series: [
+            {
+                name: '检测结果',
+                data: {{history_data}},
+                type: 'bar',
+                barWidth: '50%',
+                itemStyle: {
+                    color: '#047a14',
+                    opacity: 0.8
+                }
+            },
+            {
+                data: {{history_data}},
+                type: 'line',
+                itemStyle: {
+                    color: '#eaa031',
+                    opacity: 0.8
+                },
+                label: {
+                    show: true,
+                    position: 'top',
+                    textStyle: {
+                        fontSize: 16
+                    }
+                }
+            }
+        ]
+    };
+
+    // 使用刚指定的配置项和数据显示图表。
+    myChart1.setOption(option1);
+    myChart2.setOption(option2);
+    myChart3.setOption(option3);
+</script>
+</body>
+</html>

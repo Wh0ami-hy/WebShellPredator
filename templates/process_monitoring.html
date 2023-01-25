@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>menu</title>
+    <link rel="stylesheet" href="../static/lib/layui-v2.6.3/css/layui.css" media="all">
+    <link rel="stylesheet" href="../static/css/public.css" media="all">
+    <script type="text/javascript" src="../static/js/vue.js"></script>
+    <script src="../static/lib/jquery-3.4.1/jquery-3.4.1.min.js"></script>
+    <script src="../static/lib/layui-v2.6.3/layui.js" charset="utf-8"></script>
+    <style>
+        .layui-btn:not(.layui-btn-lg):not(.layui-btn-sm):not(.layui-btn-xs) {
+            height: 34px;
+            line-height: 34px;
+            padding: 0 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div class="layui-row">
+            <div class="layui-col-md1">
+                <button type="button" class="layui-btn layui-btn-normal layui-btn-radius"
+                    style="width: 100px; height: 36px;margin-bottom: 10px;" onclick="eidt_blacklist()" id="select-path">编辑黑名单</button>
+					<!-- 在开始检测时，这个按钮应该禁止使用 -->
+            </div>
+            <div class="layui-col-md1">
+                <button type="button" class="layui-btn layui-btn-radius" style="width: 100px; height: 36px;"
+                id="start" disabled="true">{{ operation }}</button> 
+				<!-- 这里应该在开始检测后变更样式为停止检测，并切换绑定事件 -->
+            </div>
+            <div class="layui-col-md10 layui-card">
+                <div class="layui-card-header">当前状态:{{ tips }}</div>
+            </div>
+        </div>
+        <br>
+    </div>
+        <script type="text/html" id="toolbarDemo">
+	</script>
+        <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+    <script>
+        let socket = parent.get_socket();
+		let tableDataInObjectArray = []
+
+        let app = new Vue({ // Vue实例
+            el: '#app',
+            data: {
+                blackListFlag: false, // 用于标记和名单是否可用
+                condition : 0, // 用于状态码，见下方的监听函数，给出了不同状态
+                tips: ' ', // 提示信息，根据condition变量值变化
+				operation: '开始检测',
+                filename: 'blackList'
+            },
+            watch: { // 监听
+                condition: { // 监听condition变量
+                    immediate: true, // 在初始化的时候执行一次
+                    handler: function(){ // condition变量发生变化时，就执行此函数
+                        switch(this.condition){ // 根据状态码，给出不同的提示信息
+                            case 0:
+                                this.tips = '黑名单为空，请先编辑黑名单'
+                                this.let_button_disabled('start')
+								this.change_to_start('start')
+                                break
+                            case 1:
+                                this.tips = '黑名单加载完成，可以开始监控'
+								this.let_button_abled('start')
+                                break
+                            case 2:
+                                this.tips = '正在监控'
+								this.change_to_stop('start')
+                                break
+                            case 3:
+                                this.tips = '监控已经停止'
+								this.change_to_start('start')
+                                break
+                        }
+                    }
+                }
+            },
+            mounted(){ // 将本页面的app实例中的setPath方法暴露给外界，用于从子页面获取路径
+                window.get_filename = this.get_filename;
+            },
+            methods:{ // 定义方法
+                get_filename: function(){ // 该方法会被子页面调用，获得文件名
+                    return this.filename
+                },
+                change_to_stop: function(idOfButton){ // 更改按钮样式为：停止监控
+					this.operation = "停止监控"
+					let elem = document.getElementById(idOfButton)
+					elem.onclick = null
+					elem.onclick = stop_testing
+                },
+                change_to_start: function(idOfButton){ // 更改按钮样式为：开始监控
+					this.operation = "开始监控"
+					let elem = document.getElementById(idOfButton)
+					elem.onclick = null
+					elem.onclick = start_testing
+                },
+				let_button_abled: function(idOfButton){ // 使按钮可用
+					let classStr = document.getElementById(idOfButton).className
+					document.getElementById(idOfButton).className = classStr.replace(' layui-btn-disabled','')
+					document.getElementById(idOfButton).disabled=false
+				},
+				let_button_disabled: function(idOfButton){ // 禁用按钮
+					document.getElementById(idOfButton).className += ' layui-btn-disabled' // 更改class，以修改样式
+                    document.getElementById(idOfButton).disabled=true // 更改disabled属性，以选择禁用按钮
+				}
+            }
+        })
+
+		document.getElementById('start').onclick = start_testing
+
+        layui.use(['form', 'table', 'element'], function () { // layui框架
+            var $ = layui.jquery,
+                form = layui.form,
+                table = layui.table,
+                element = layui.element;
+        
+
+            socket.on('process monitoring receiving data in table', function (dataInObject) { // 接收来自服务器的表格数据，并执行以下函数，接收数据在dataInObjectArray中
+				tableDataInObjectArray.push(dataInObject)
+                table.render({ // 渲染表格
+                    elem: '#currentTableId',
+                    data: tableDataInObjectArray,
+                    toolbar: '#toolbarDemo',
+                    defaultToolbar: ['filter', 'exports', 'print'],
+                    cols: [[
+					{field: 'processName', minwidth: 500, title: '进程名', sort: true,align: "center"},
+					{field: 'description', minwidth: 300, title: '说明', sort: true, align: "center"},
+					{field: 'pid', minwidth: 50, title: 'PID', sort: true, align: "center"},
+                    {field: 'runningTime', minwidth: 50, title: '运行时间', sort: true, align: "center"}
+					]],
+                    limits: [10, 15, 20, 25, 50, 100],
+                    limit: 100,
+                    page: true,
+                    skin: 'row'
+                });
+            }); // 接收表格数据
+			
+        });
+
+        function start_testing() { // 触发开始检测
+            app.condition = 2
+            socket.emit('process monitoring start test', { "canshu": 0 }) //向服务器发送运行开始检测的请求
+        }
+
+		function stop_testing(){
+			app.condition = 3
+			socket.emit('process monitoring stop test', {"args": 0})
+		}
+
+        function eidt_blacklist(){ // 编辑黑名单
+            layer.open({ // 设置弹出层
+                type: 2,
+                area: ['700px', '450px'],
+                fixed: false, //不固定
+                maxmin: true,
+                content: '/editor', // 这里对应flask的路由
+                title: '编辑黑名单'
+            });
+        }
+
+        socket.emit('check file',{'filename':app.filename}) // 先向服务器询问黑名单是否可用
+
+        socket.on('check file condition blackList',function(data){ // 获取黑名单的状态
+            if(data === 0){
+                app.condition = 0
+            }else{
+                app.condition = 1
+            }
+        })
+    </script>
+</body>
+
+</html>
+

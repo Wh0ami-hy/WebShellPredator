@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script type="text/javascript" src="../static/js/vue.js"></script>
+    <script src="../static/lib/jquery-3.4.1/jquery-3.4.1.min.js"></script>
+    <script src="../static/lib/layui-v2.6.3/layui.js"></script>
+    <link rel="stylesheet" href="../static/lib/layui-v2.6.3/css/layui.css">
+    <title>Document</title>
+    <style>
+        .my-editor{
+            position: absolute;
+            left: -53px;
+            width: 600px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="layui-form-item layui-form-text">
+            <div class="layui-row">
+                <label class="layui-form-label">编辑器</label>
+                <button class="layui-btn layui-btn-normal" @click="saveTextArea">保存</button>
+                <label class="layui-form-label">{{ tips }}</label>
+            </div>
+            <div class="layui-input-block layui-row my-editor">
+                <textarea placeholder="请输入内容" class="layui-textarea" v-model="textCont"></textarea>
+            </div>
+        </div>
+    </div>
+    <script>
+        let socket = parent.parent.get_socket();
+        let app = new Vue({
+            el: '#app',
+            data: {
+                textCont: '', // 文本内容
+                tips: "" // 提示
+            },
+            mounted(){
+                window.get_filename = this.get_filename // 引用父页面暴露的方法
+            },
+            methods:{
+                saveTextArea: function(){ // 保存文本
+                    socket.emit('save file', {"filename": window.parent.get_filename(), "data": this.textCont})
+                    this.tips = "保存成功"
+                }
+            }
+        })
+        socket.emit(`give me file ${window.parent.get_filename()}`, {"arg":0}) // 首先向服务器发送，获取文本
+        socket.on(`get ${window.parent.get_filename()}`, function(dataInString){ // 接收文本
+            app.textCont = dataInString
+        })
+    </script>
+</body>
+</html>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>menu</title>
+    <link rel="stylesheet" href="../static/lib/layui-v2.6.3/css/layui.css" media="all">
+    <link rel="stylesheet" href="../static/css/public.css" media="all">
+    <script type="text/javascript" src="../static/js/vue.js"></script>
+    <script src="../static/lib/jquery-3.4.1/jquery-3.4.1.min.js"></script>
+    <script src="../static/lib/layui-v2.6.3/layui.js" charset="utf-8"></script>
+    <style>
+        .layui-btn:not(.layui-btn-lg):not(.layui-btn-sm):not(.layui-btn-xs) {
+            height: 34px;
+            line-height: 34px;
+            padding: 0 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div class="layui-row">
+            <div class="layui-col-md1">
+                <button type="button" class="layui-btn layui-btn-normal layui-btn-radius"
+                    style="width: 100px; height: 36px;margin-bottom: 10px;" onclick="select_path()" id="select-path">选择目录</button>
+					<!-- 在开始检测时，这个按钮应该禁止使用 -->
+            </div>
+            <div class="layui-col-md11 layui-card">
+                <div class="layui-card-header">当前状态:{{ tips }}</div>
+            </div>
+        </div>
+        <div class="layui-row">
+            <div class="layui-col-md1">
+                <button type="button" class="layui-btn layui-btn-radius" style="width: 100px; height: 36px;"
+                id="start" disabled="true">{{ operation }}</button> 
+				<!-- 这里应该在开始检测后变更样式为停止检测，并切换绑定事件 -->
+            </div>
+            <div class="layui-col-md11 layui-card">
+                <div class="layui-card-body">{{ pathLoaded }}</div>
+            </div>
+        </div>
+        <br>
+    </div>
+        <script type="text/html" id="toolbarDemo">
+	</script>
+        <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+    <script>
+        let socket = parent.get_socket();
+		let tableDataInObjectArray = []
+
+        let app = new Vue({ // Vue实例
+            el: '#app',
+            data: {
+                pathLoaded : ' ', // 该变量用于显示已经装载的目录
+                condition : 0, // 用于状态码，见下方的监听函数，给出了不同状态
+                tips: '当前未加载目录', // 提示信息，根据condition变量值变化
+				operation: '开始检测'
+            },
+            watch: { // 监听
+				pathLoaded: { // 监听pathLoaded变量
+                    handler: function(){ // 处理函数，当变量发生变化时，执行此函数
+                        this.condition = 1 // 更改状态码为1
+                    }
+                },
+                condition: { // 监听condition变量
+                    immediate: true, // 在初始化的时候执行一次
+                    handler: function(){ // condition变量发生变化时，就执行此函数
+                        switch(this.condition){ // 根据状态码，给出不同的提示信息
+                            case 0:
+                                this.tips = '没有装载目录'
+                                this.let_button_disabled('start')
+								this.change_to_start('start')
+                                break
+                            case 1:
+                                this.tips = '已经装载目录，可以开始检测'
+								this.let_button_abled('start')
+                                break
+                            case 2:
+                                this.tips = '正在检测'
+								this.change_to_stop('start')
+                                break
+                            case 3:
+                                this.tips = '检测已经结束'
+								this.change_to_start('start')
+                                break
+                        }
+                    }
+                }
+            },
+            mounted(){ // 将本页面的app实例中的setPath方法暴露给外界，用于从子页面获取路径
+                window.setPath = this.setPath;
+            },
+            methods:{ // 定义方法
+                setPath: function(path){ // 该方法会被子页面调用，获得路径
+                    this.pathLoaded = path
+                },
+                change_to_stop: function(idOfButton){ // 更改按钮样式为：停止监控
+					this.operation = "停止监控"
+					let elem = document.getElementById(idOfButton)
+					elem.onclick = null
+					elem.onclick = stop_testing
+                },
+                change_to_start: function(idOfButton){ // 更改按钮样式为：开始监控
+					this.operation = "开始监控"
+					let elem = document.getElementById(idOfButton)
+					elem.onclick = null
+					elem.onclick = start_testing
+                },
+				let_button_abled: function(idOfButton){ // 使按钮可用
+					let classStr = document.getElementById(idOfButton).className
+					document.getElementById(idOfButton).className = classStr.replace(' layui-btn-disabled','')
+					document.getElementById(idOfButton).disabled=false
+				},
+				let_button_disabled: function(idOfButton){ // 禁用按钮
+					document.getElementById(idOfButton).className += ' layui-btn-disabled' // 更改class，以修改样式
+                    document.getElementById(idOfButton).disabled=true // 更改disabled属性，以选择禁用按钮
+				}
+            }
+        })
+
+		document.getElementById('start').onclick = start_testing
+
+        layui.use(['form', 'table', 'element'], function () { // layui框架
+            var $ = layui.jquery,
+                form = layui.form,
+                table = layui.table,
+                element = layui.element;
+        
+
+            socket.on('file monitoringg receiving data in table', function (dataInObject) { // 接收来自服务器的表格数据，并执行以下函数，接收数据在dataInObjectArray中
+				tableDataInObjectArray.push(dataInObject)
+                table.render({ // 渲染表格
+                    elem: '#currentTableId',
+                    data: tableDataInObjectArray,
+                    toolbar: '#toolbarDemo',
+                    defaultToolbar: ['filter', 'exports', 'print'],
+                    cols: [[
+					{field: 'filename', minwidth: 500, title: '文件', sort: true,align: "center"},
+					{field: 'operation', minwidth: 300, title: '操作', sort: true, align: "center"},
+                    {field: 'runningTime', minwidth: 50, title: '运行时间', sort: true, align: "center"}
+					]],
+                    limits: [10, 15, 20, 25, 50, 100],
+                    limit: 100,
+                    page: true,
+                    skin: 'row'
+                });
+            }); // 接收表格数据
+			
+        });
+
+        function start_testing() { // 触发开始检测
+            app.let_button_disabled('select-path')
+            app.condition = 2
+            socket.emit('file monitoring start test', { 'path':app.pathLoaded }) //向服务器发送运行开始检测的请求
+        }
+
+		function stop_testing(){ // 触发停止检测
+			app.condition = 3
+            app.let_button_abled('select-path')
+			socket.emit('file monitoring stop test', {"args": 0})
+		}
+
+        function select_path() { // 路径选择
+            layer.open({ // 设置弹出层
+                type: 2,
+                area: ['700px', '450px'],
+                fixed: false, //不固定
+                maxmin: true,
+                content: '/pathselect', // 这里对应flask的路由
+                title: '路径选择:单击文件或文件夹即可选择'
+            });
+        }
+
+    </script>
+</body>
+
+</html>
+

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>menu</title>
+    <link rel="stylesheet" href="../static/lib/layui-v2.6.3/css/layui.css" media="all">
+    <link rel="stylesheet" href="../static/css/public.css" media="all">
+    <script type="text/javascript" src="../static/js/vue.js"></script>
+    <script src="../static/lib/jquery-3.4.1/jquery-3.4.1.min.js"></script>
+	<script src="../static/lib/layui-v2.6.3/layui.js" charset="utf-8"></script>
+    <style>
+        .layui-btn:not(.layui-btn-lg ):not(.layui-btn-sm):not(.layui-btn-xs) {
+            height: 34px;
+            line-height: 34px;
+            padding: 0 8px;
+		}
+		button{
+			float: left;
+		}
+		p{
+			text-align-last: center;
+		}
+    </style>
+</head>
+<body>
+	<div id="app">
+		<div class="layui-row" style="margin-top: 300px;">
+			<div class="layui-col-md4 layui-col-md-offset4">
+				<div class="layui-form-item">
+					<label class="layui-form-label">邮箱</label>
+					<div class="layui-input-block">
+						<input type="text" name="title" v-model:value="email" autocomplete="off" placeholder="请输入邮箱" class="layui-input" style="border: #000000 solid 1px;">
+					</div>
+				</div>
+				<br>
+				<button class="layui-btn" lay-submit="" lay-filter="demo1" style="margin-left: 200px;" @click="submit_email">提交或更新邮箱</button>
+				<button class="layui-btn" lay-submit="" lay-filter="demo1" style="margin-left: 30px;" @click="unbind_email">解绑</button>
+			</div>
+		</div>
+		<p>{{ tips }}</p>
+	</div>
+	<script>
+        let socket = parent.get_socket();
+		let app = new Vue({
+			el:'#app',
+			data:{
+				email: '', // 邮箱
+				tips: ''
+			},
+			methods:{
+				submit_email: function(){
+					socket.emit('threat warming submit', this.email)
+					this.tips = '邮箱已更新'
+				},
+				unbind_email: function(){
+					socket.emit('threat warming unbind', this.email)
+					this.tips = '邮箱已解绑'
+				}
+			}
+		})
+	</script>
+</body>
+</html>

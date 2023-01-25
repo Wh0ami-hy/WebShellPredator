@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>menu</title>
+    <link rel="stylesheet" href="../static/lib/layui-v2.6.3/css/layui.css" media="all">
+    <link rel="stylesheet" href="../static/css/public.css" media="all">
+	<script type="text/javascript" src="../static/js/vue.js"></script>
+	<script src="../static/lib/jquery-3.4.1/jquery-3.4.1.min.js"></script>
+	<script src="../static/lib/layui-v2.6.3/layui.js" charset="utf-8"></script>
+    <style>
+        .layui-btn:not(.layui-btn-lg ):not(.layui-btn-sm):not(.layui-btn-xs) {
+            height: 34px;
+            line-height: 34px;
+            padding: 0 8px;
+        }
+    </style>
+</head>
+<body>
+	<div id="app">
+	<div class="layui-row">
+		<div class="layui-col-md1">
+			<button type="button" class="layui-btn layui-btn-normal layui-btn-radius" style="width: 100px; height: 36px;margin-bottom: 10px;" id="path-select" onclick="log_select()">选择日志</button>
+			<br>
+			<button type="button" class="layui-btn layui-btn-warm layui-btn-radius" style="width: 100px; height: 36px;margin-bottom: 10px;" id="edit-whiteList" onclick="edit_whiteList()">编辑白名单</button>
+			<br>
+			<button type="button" class="layui-btn layui-btn-radius" style="width: 100px; height: 36px;" id="start" onclick="start_testing()">开始扫描</button>
+		</div>
+			<div class="layui-col-md11 layui-card">
+			  <div class="layui-card-header">当前状态:{{ tips }}</div>
+				  <div class="layui-card-body">
+					{{ pathLoaded }}
+				  </div>
+			</div>
+	</div>
+	<br>
+	<div class="layui-row">
+		<h3 class="layui-col-md1">当前进度:</h3>
+		<div class="layui-progress layui-progress-big layui-col-md11" lay-showPercent="yes"
+			lay-filter="porcessAmount">
+			<div class="layui-progress-bar layui-bg-green" lay-percent="0%"></div>
+		</div>
+	</div>
+	</div>
+	
+
+	<script type="text/html" id="toolbarDemo">
+		<div class="layui-btn-container">
+		</div>
+	</script>
+	<table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+<script>
+	let socket = parent.get_socket();
+	let whiteListAvailableFlag = false
+	let copyOfTheClassName = "layui-btn layui-btn-radius"
+
+	let app = new Vue({ // Vue实例
+		el: '#app',
+		data: {
+			pathLoaded: ' ', // 加载的路径
+			whiteListFlag: false, // 用于标记白名单是否可用
+			tips: '', // 提示消息
+			filename: 'whiteList', // 传递给子页面，要打开的文本文件名
+			condition: 0 // 状态码
+		},
+		methods:{
+			get_filename: function(){ // 该方法会被子页面调用，获得文件名
+				return this.filename
+			},
+			setPath: function(path){ // 该方法会被子页面调用，获得路径
+                    this.pathLoaded = path
+			},
+			let_button_abled: function(idOfButton){ // 使按钮可用
+				if(idOfButton === 'start'){ // 单独筛选出id为start的标签，这里的分支避免了replace的bug
+					document.getElementById(idOfButton).className = copyOfTheClassName
+				}else{
+					let classStr = document.getElementById(idOfButton).className
+					document.getElementById(idOfButton).className = classStr.replace(' layui-btn-disabled','')
+				}
+				document.getElementById(idOfButton).disabled=false
+			},
+			let_button_disabled: function(idOfButton){ // 禁用按钮
+				document.getElementById(idOfButton).className += ' layui-btn-disabled' // 更改class，以修改样式
+				document.getElementById(idOfButton).disabled=true // 更改disabled属性，以选择禁用按钮
+			}
+		},
+		mounted(){
+			window.setPath = this.setPath;
+			window.get_filename = this.get_filename;
+		},
+		watch:{
+			pathLoaded:{
+				handler: function(){
+					this.condition = 2
+				}
+			},
+			condition:{
+				immediate: true,
+				handler: function(){
+					switch(this.condition){
+						case 0:
+							this.tips = '白名单为空，请先编辑白名单'
+							this.let_button_disabled('start')
+							break
+						case 1:
+							this.tips = '未加载日志，请选择日志'
+							this.let_button_disabled('start')
+							break
+						case 2:
+							if(!whiteListAvailableFlag){
+								this.condition = 0
+								break
+							}
+							if(this.pathLoaded === ' '){
+								this.condition = 1
+								break
+							}
+							this.tips = '可以开始检测'
+							this.let_button_abled('start')
+							break
+						case 3:
+							this.tips = '检测中'
+							this.let_button_disabled('start')
+							this.let_button_disabled('path-select')
+							this.let_button_disabled('edit-whiteList')
+							break
+						case 4:
+							this.tips = '检测完毕'
+							this.let_button_abled('start')
+							this.let_button_abled('path-select')
+							this.let_button_abled('edit-whiteList')
+							break
+					}
+				}
+			}
+		}
+	})
+
+	layui.use(['form', 'table', 'element'], function () { // layui框架
+            var $ = layui.jquery,
+                form = layui.form,
+                table = layui.table,
+                element = layui.element;
+
+			socket.on('log analysis amount of progress', function (dataInNumber) { // 接收进度条数值，数值接收到了dataInNumber中
+				element.progress('porcessAmount', `${dataInNumber.toFixed(0)}%`) // 动态赋值
+			}) // 进度条进度渲染
+
+            socket.on('log analysis receiving data in table', function (dataInObjectArray) { // 接收来自服务器的表格数据，并执行以下函数，接收数据在dataInObjectArray中
+				app.condition = 4
+                table.render({ // 渲染表格
+                    elem: '#currentTableId',
+                    data: dataInObjectArray,
+                    toolbar: '#toolbarDemo',
+                    defaultToolbar: ['filter', 'exports', 'print'],
+                    cols: [[
+						{field: 'url', minwidth: 500, title: 'URL', sort: true,align: "center"},
+						{field: 'explain', minwidth: 300, title: '说明', sort: true, align: "center"}
+					]],
+                    limits: [10, 15, 20, 25, 50, 100],
+                    limit: 100,
+                    page: true,
+                    skin: 'row'
+                });
+            }); // 接收表格数据
+
+			
+        });
+
+		function start_testing() { // 触发开始检测
+            app.condition = 3
+            socket.emit('log analysis start test', { "path":app.pathLoaded }) //向服务器发送运行开始检测的请求
+        }
+
+		function edit_whiteList(){
+			layer.open({ // 设置弹出层
+                type: 2,
+                area: ['700px', '450px'],
+                fixed: false, //不固定
+                maxmin: true,
+                content: '/editor', // 这里对应flask的路由
+                title: '编辑白名单'
+            });
+		}
+
+		function log_select(){
+			layer.open({ // 设置弹出层
+                type: 2,
+                area: ['700px', '450px'],
+                fixed: false, //不固定
+                maxmin: true,
+                content: '/pathselect', // 这里对应flask的路由
+                title: '路径选择:单击文件或文件夹即可选择'
+            });
+		}
+
+		socket.emit('check file',{'filename':app.filename}) // 先向服务器询问白名单是否可用
+
+        socket.on('check file condition whiteList',function(data){ // 接收白名单的状态
+            if(data === 0){
+                whiteListAvailableFlag = false
+            }else{
+                whiteListAvailableFlag = true
+            }
+			app.condition = 2
+        })
+</script>
+</body>
+</html>
+
