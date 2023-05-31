@@ -1,0 +1,14 @@
+# 指定基础镜像
+FROM python:3.8.10
+# 设置工作目录(会自动创建)
+WORKDIR /app
+# 将项目下的requirements.txt文件复制到 /app目录
+COPY ./requirements.txt .
+# 执行命令pip install --no-cache-dir -r requirements.txt 安装项目依赖
+RUN pip install --no-cache-dir -r requirements.txt
+# 将Flask 项目复制到容器中的 /app 目录
+COPY . .
+# 容器向外暴露5000端口
+EXPOSE 5000
+# 在容器启动时运行 app.py 脚本
+CMD [ "python", "app.py" ]
